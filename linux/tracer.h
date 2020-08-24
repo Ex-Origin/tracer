@@ -29,6 +29,7 @@ void print_regs(struct user_regs_struct *regs);
 void interupt(int pid);
 int install_break_point(int pid, size_t addr);
 int continue_break_point(int pid);
+int restore_break_point(int pid);
 ssize_t get_image_addr(int pid);
 void detach(int pid);
 void continue_(int pid);
@@ -38,6 +39,7 @@ size_t peekdata(int pid, size_t addr);
 void pokedata(int pid, size_t addr, size_t vaule);
 ssize_t get_addr(int pid, char *search);
 void update_tmp_pid(int pid);
+void print_hex(unsigned char *addr, int size, int mode);
 
 void (*__traceme_hook)();
 
@@ -126,7 +128,6 @@ void interupt(int pid)
 {
     int wstatus;
     kill(pid, SIGINT);
-    waitpid(pid, &wstatus, 0);
     wait_for_signal(pid, SIGINT);
 }
 
@@ -187,7 +188,7 @@ size_t peekdata(int pid, size_t addr)
 
 void detach(int pid)
 {
-    if (ptrace(PT_DETACH, pid, 0, 0) == -1)
+    if (ptrace(PTRACE_DETACH, pid, 0, 0) == -1)
     {
         PERROR("ptrace");
         exit(EXIT_FAILURE);
@@ -279,7 +280,7 @@ int install_break_point(int pid, size_t addr)
     return 0;
 }
 
-int continue_break_point(int pid)
+int restore_break_point(int pid)
 {
     struct user_regs_struct regs;
     size_t value, rip;
@@ -303,6 +304,17 @@ int continue_break_point(int pid)
     regs.rip = rip;
     setregs(pid, &regs);
     pokedata(pid, rip, global_point[index].previous_byte);
+
+    return 0;
+}
+
+int continue_break_point(int pid)
+{
+    struct user_regs_struct regs;
+    size_t value, rip;
+    int index, wstatus;
+
+    restore_break_point(pid);
 
     if (ptrace(PTRACE_SINGLESTEP, pid, 0, 0) == -1)
     {
@@ -376,11 +388,51 @@ ssize_t get_image_addr(int pid)
 {
     char path[0x100];
     char exename[0x100];
+    memset(exename, 0, sizeof(exename));
+    memset(path, 0, sizeof(path));
     snprintf(path, sizeof(path), "/proc/%d/exe", pid);
     readlink(path, exename, sizeof(exename));
 
     global_image_base_addr = get_addr(pid, exename);
     return global_image_base_addr;
+}
+
+void print_hex(unsigned char *addr, int size, int mode)
+{
+    int i, ii;
+    unsigned long long temp;
+    switch(mode)
+    {
+    case 0:
+        for(i = 0; i < size; )
+        {
+            for(ii = 0; i < size && ii < 8; i++, ii++)
+            {
+                printf("%02X ", addr[i]);
+            }
+            printf("    ");
+            for(ii = 0; i < size && ii < 8; i++, ii++)
+            {
+                printf("%02X ", addr[i]);
+            }
+            puts("");
+        }
+        break;
+
+    case 1:
+        for(i = 0; i < size; )
+        {
+            temp = *(unsigned long long *)(addr + i);
+            for(ii = 0; i < size && ii < 8; i++, ii++)
+            {
+                printf("%02X ", addr[i]);
+            }
+            printf("    ");
+            printf("0x%llx\n", temp);
+        }
+        break;
+    }
+    
 }
 
 #endif
