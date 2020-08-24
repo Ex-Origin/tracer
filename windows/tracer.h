@@ -13,6 +13,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <winternl.h>
 #include <windows.h>
 
 int traceme(char* cmdline, PROCESS_INFORMATION* out);
@@ -44,6 +45,7 @@ void (*__traceme_hook)();
 #define XDI Rdi
 #define XSI Rsi
 #define XSP Rsp
+#define HEX_FORMAT "%16llx"
 #elif _WIN32
 #define XIP Eip
 #define XAX Eax
@@ -53,6 +55,7 @@ void (*__traceme_hook)();
 #define XDI Edi
 #define XSI Esi
 #define XSP Esp
+#define HEX_FORMAT "%8lx"
 #endif
 
 size_t global_image_base_addr = 0;
@@ -83,26 +86,26 @@ size_t global_image_base_addr = 0;
 
 void print_regs(CONTEXT* Regs)
 {
-    printf("rcx: %16llx    rdx: %16llx\n", Regs->XCX, Regs->XDX);
+    printf("rcx: " HEX_FORMAT "    rdx: " HEX_FORMAT "\n", Regs->XCX, Regs->XDX);
 #ifdef _WIN64
-    printf("r8 : %16llx    r9 : %16llx\n", Regs->R8, Regs->R9);
+    printf("r8 : " HEX_FORMAT "    r9 : " HEX_FORMAT "\n", Regs->R8, Regs->R9);
 #endif
-    printf("rax: %16llx    rbx: %16llx\n", Regs->XAX, Regs->XBX);
-    printf("rdi: %16llx    rsi: %16llx\n", Regs->XDI, Regs->XSI);
-    printf("rdi: %16llx    rsi: %16llx\n", Regs->XDI, Regs->XSI);
+    printf("rax: " HEX_FORMAT "    rbx: " HEX_FORMAT "\n", Regs->XAX, Regs->XBX);
+    printf("rdi: " HEX_FORMAT "    rsi: " HEX_FORMAT "\n", Regs->XDI, Regs->XSI);
+    printf("rdi: " HEX_FORMAT "    rsi: " HEX_FORMAT "\n", Regs->XDI, Regs->XSI);
 #ifndef FOR_IDA
-    printf("rsp: %16llx    rip: %16llx\n", Regs->XSP, Regs->XIP);
+    printf("rsp: " HEX_FORMAT "    rip: " HEX_FORMAT "\n", Regs->XSP, Regs->XIP);
 #else
 #ifdef _WIN64
     if ((size_t)(Regs->XIP - global_image_base_addr + 0x140001000) < 0x2000000)
-        printf("rsp: %16llx    rip: %16llx (%#llx)\n", Regs->XSP, Regs->XIP, Regs->XIP - global_image_base_addr + 0x140001000);
+        printf("rsp: " HEX_FORMAT "    rip: " HEX_FORMAT " (%#llx)\n", Regs->XSP, Regs->XIP, Regs->XIP - global_image_base_addr + 0x140001000);
     else
-        printf("rsp: %16llx    rip: %16llx\n", Regs->XSP, Regs->XIP);
+        printf("rsp: " HEX_FORMAT "    rip: " HEX_FORMAT "\n", Regs->XSP, Regs->XIP);
 #elif _WIN32
     if ((size_t)(Regs->XIP - global_image_base_addr + 0x140001000) < 0x401000)
-        printf("rsp: %16llx    rip: %16llx (%#llx)\n", Regs->XSP, Regs->XIP, Regs->XIP - global_image_base_addr + 0x401000);
+        printf("rsp: " HEX_FORMAT "    rip: " HEX_FORMAT " (%#lx)\n", Regs->XSP, Regs->XIP, Regs->XIP - global_image_base_addr + 0x401000);
     else
-        printf("rsp: %16llx    rip: %16llx\n", Regs->XSP, Regs->XIP);
+        printf("rsp: " HEX_FORMAT "    rip: " HEX_FORMAT "\n", Regs->XSP, Regs->XIP);
 #endif
 #endif // !FOR_IDA
 }

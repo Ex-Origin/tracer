@@ -25,7 +25,7 @@ int main(int argc, char** argv)
     traceme(command, &pi);
 
     image_addr = get_image_addr(&pi);
-    printf("image_addr: %#llx\n", image_addr);
+    printf("image_addr: %#p\n", (char*)image_addr);
 
     install_break_point(&pi, image_addr + 0x1041);
     ResumeThread(pi.hThread);
@@ -36,7 +36,7 @@ int main(int argc, char** argv)
         if (restore_break_point(&pi) == 0)
         {
             getregs(&pi, &Regs);
-            Regs.Rax = 12;
+            Regs.XAX = 12;
             setregs(&pi, &Regs);
         }
         continue_(&pi);
