@@ -131,14 +131,13 @@ int traceme(char* cmdline, PROCESS_INFORMATION* out)
 size_t get_image_addr(PROCESS_INFORMATION* pi)
 {
     unsigned char* addr, * image_addr;
-    NTSTATUS(*NtQueryInformationProcessHook)
+    NTSTATUS(__stdcall * NtQueryInformationProcessHook)
         (HANDLE, PROCESSINFOCLASS, PVOID, ULONG, PULONG);
     PROCESS_BASIC_INFORMATION info;
     size_t result;
 
     ZeroMemory(&info, sizeof(info));
     *(size_t*)&NtQueryInformationProcessHook = (size_t)GetProcAddress(LoadLibraryA("ntdll.dll"), "NtQueryInformationProcess");
-    //result = NtQueryInformationProcessHook(hProcess, ProcessBasicInformation, &info, sizeof(info), NULL);
     ASSERT(NtQueryInformationProcessHook(pi->hProcess, ProcessBasicInformation, &info, sizeof(info), NULL), 0);
     addr = (unsigned char*)info.PebBaseAddress;
     ASSERT(ReadProcessMemory(pi->hProcess, addr + (sizeof(PVOID) * 2), &image_addr, sizeof(PVOID), &result) != 0, 1);
