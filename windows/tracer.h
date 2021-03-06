@@ -1,7 +1,6 @@
 /*
  *
  * Author: Ex
- * Time: 2020-08-25
  * Email: 2462148389@qq.com
  *
  **/
@@ -29,7 +28,19 @@ void single_step(PROCESS_INFORMATION* pi);
 int install_break_point(PROCESS_INFORMATION* pi, size_t addr);
 void detach(PROCESS_INFORMATION* pi);
 void continue_(PROCESS_INFORMATION* pi);
+/*
+ *
+ * Require: suspended process.
+ * Return: suspended process.
+ * 
+ **/
 int restore_break_point(PROCESS_INFORMATION* pi);
+/*
+ *
+ * Require: suspended process.
+ * Return: running process.
+ * 
+ **/
 int continue_break_point(PROCESS_INFORMATION* pi);
 
 void (*__traceme_hook)();
@@ -407,6 +418,8 @@ void single_step(PROCESS_INFORMATION* pi)
     getregs(pi, &Regs);
     Regs.EFlags |= 0x100;
     setregs(pi, &Regs);
+    continue_(pi);
+    wait_for_signal(pi, SIGTRAP);
 }
 
 #define ERROR_RET(arg) arg
@@ -506,9 +519,12 @@ int continue_break_point(PROCESS_INFORMATION* pi)
     }
     if (index == sizeof(global_point) / sizeof(BreakPoint))
     {
+        fprintf(stderr, "WARNING: find a unexpected SIGTRAP in " HEX_FORMAT "\n", Regs.XIP);
+        continue_(pi);
         return ERROR_RET(1);
     }
     restore_break_point(pi);
+    single_step(pi);
 
     value = global_point[index].previous_byte;
     value = (value & ~(0xff)) | (0xcc);

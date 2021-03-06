@@ -30,6 +30,8 @@ int main(int argc, char** argv)
     install_break_point(&pi, image_addr + 0x1041);
     ResumeThread(pi.hThread);
 
+    printf("dwProcessId: %d\n", pi.dwProcessId);
+
     while (TRUE)
     {
         wait_for_signal(&pi, SIGTRAP);
