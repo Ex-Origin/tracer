@@ -11,6 +11,7 @@ void print_regs(struct user_regs_struct *regs);
 void interupt(int pid);
 int install_break_point(int pid, size_t addr);
 int continue_break_point(int pid);
+int restore_break_point(int pid);
 ssize_t get_image_addr(int pid);
 void detach(int pid);
 void continue_(int pid);
@@ -20,14 +21,45 @@ size_t peekdata(int pid, size_t addr);
 void pokedata(int pid, size_t addr, size_t vaule);
 ssize_t get_addr(int pid, char *search);
 void update_tmp_pid(int pid);
+void print_hex(unsigned char *addr, int size, int mode);
+void *trace_mmap(int pid, void *addr, size_t length, int prot);
+void *trace_mprotect(int pid, void *addr, size_t length, int prot);
+
+/*
+ * 
+ * Set library address at the beginning of the child process. It will fail to call the function after the finished of libc loading.
+ * 
+ * Require: suspended process.
+ * Return: running process.
+ * 
+ **/
+void set_libc_addr(int pid, size_t addr);
+// If sig is SIGSTOP, the child process will be blocked.
+void gdb_attach(int pid, int sig);
+
+/*
+ * 
+ * Set heap address at the beginning of the initial malloc.
+ * 
+ * Require: suspended process.
+ * Return: running process.
+ * 
+ **/
+void set_heap_addr(int pid, size_t addr);
+
+/*
+ * Monitoring syscall number until there is a required syscall_num, It will run until the required syscall happen.
+ * 
+ * Argument: If syscall_num is -1, then it will stop at any next syscall.
+ * 
+ * Note: the process must be suspended, or not it will be failed.
+ * 
+ * Require: suspended process.
+ * Return: suspended process.
+ * 
+ **/
+int break_syscall(int pid, size_t syscall_num);
 ```
-
-1. `set_libc_addr`(int pid, size_t addr): Set library address at the beginning of the child process. It will fail to call the function after the finished of libc loading.
-2. `set_heap_addr`(int pid, size_t addr): Set heap address at the beginning of the initial malloc. Same as above.
-
-3. `gdb_attach`(int pid, int sig): Just detach the child process to make it freedom, if `sig` is `SIGSTOP`, then the process will be suspended to wait for gdb attaching.
-
-4. `break_syscall`(int pid, size_t syscall_num): Monitoring syscall number until there is a required `syscall_num`.
 
 #### count.c
 

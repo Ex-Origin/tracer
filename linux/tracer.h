@@ -42,10 +42,40 @@ void update_tmp_pid(int pid);
 void print_hex(unsigned char *addr, int size, int mode);
 void *trace_mmap(int pid, void *addr, size_t length, int prot);
 void *trace_mprotect(int pid, void *addr, size_t length, int prot);
+
+/*
+ * 
+ * Set library address at the beginning of the child process. It will fail to call the function after the finished of libc loading.
+ * 
+ * Require: suspended process.
+ * Return: running process.
+ * 
+ **/
 void set_libc_addr(int pid, size_t addr);
 // If sig is SIGSTOP, the child process will be blocked.
 void gdb_attach(int pid, int sig);
+
+/*
+ * 
+ * Set heap address at the beginning of the initial malloc.
+ * 
+ * Require: suspended process.
+ * Return: running process.
+ * 
+ **/
 void set_heap_addr(int pid, size_t addr);
+
+/*
+ * Monitoring syscall number until there is a required syscall_num, It will run until the required syscall happen.
+ * 
+ * Argument: If syscall_num is -1, then it will stop at any next syscall.
+ * 
+ * Note: the process must be suspended, or not it will be failed.
+ * 
+ * Require: suspended process.
+ * Return: suspended process.
+ * 
+ **/
 int break_syscall(int pid, size_t syscall_num);
 
 void (*__traceme_hook)();
