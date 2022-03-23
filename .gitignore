@@ -1,0 +1,10 @@
+.vscode/
+test
+gdbpwn
+output
+output_trace
+uid
+uid_trace
+lib
+lib_trace
+.gdb_history
