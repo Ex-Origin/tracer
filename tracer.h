@@ -745,13 +745,14 @@ ssize_t get_addr(int pid, char *search)
 
     CHECK((fd = open(path, O_RDONLY)) != -1);
 
-    for(target = NULL, memset(buf, 0, sizeof(buf)); get_line(fd, buf, sizeof(buf) - 1) > 0 && target == NULL; memset(buf, 0, sizeof(buf)))
+    for(target = NULL; target == NULL && get_line(fd, buf, sizeof(buf) - 1) > 0;)
     {
+        memset(buf, 0, sizeof(buf));
         target = strstr(buf, search);
     }
     close(fd);
 
-    CHECK(target != NULL);
+    CHECK(target != NULL && buf[0] != '\0');
 
 #ifdef __x86_64__
     sscanf(buf, "%lx", &addr);
