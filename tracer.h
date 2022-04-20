@@ -745,10 +745,12 @@ ssize_t get_addr(int pid, char *search)
 
     CHECK((fd = open(path, O_RDONLY)) != -1);
 
-    for(target = NULL; target == NULL && get_line(fd, buf, sizeof(buf) - 1) > 0;)
+    for(target = NULL, memset(buf, 0, sizeof(buf)); target == NULL && get_line(fd, buf, sizeof(buf) - 1) > 0;)
     {
-        memset(buf, 0, sizeof(buf));
-        target = strstr(buf, search);
+        if((target = strstr(buf, search)) == NULL)
+        {
+            memset(buf, 0, sizeof(buf));
+        }
     }
     close(fd);
 
