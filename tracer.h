@@ -712,6 +712,26 @@ int traceme(char **new_args)
     return pid;
 }
 
+int get_line(int fd, char *buf, int size)
+{
+    int i, ret_val, end;
+
+    for(i = 0, ret_val = 1, end = 0; i < size && ret_val > 0 && end == 0; i++)
+    {
+        ret_val = read(fd, buf + i, 1);
+        if(ret_val == 1 && (buf[i] == '\n' || buf[i] == '\0'))
+        {
+            end = 1;
+        }
+    }
+    if(i - 1 < size && i - 1 >= 0 && buf[i-1] == '\n')
+    {
+        buf[i-1] = '\0';
+    }
+
+    return i;
+}
+
 ssize_t get_addr(int pid, char *search)
 {
     char buf[0x1000];
@@ -724,19 +744,19 @@ ssize_t get_addr(int pid, char *search)
     snprintf(path, sizeof(path), "/proc/%d/maps", pid);
 
     CHECK((fd = open(path, O_RDONLY)) != -1);
-    memset(buf, 0, sizeof(buf));
-    CHECK((result = read(fd, buf, sizeof(buf) - 1)) > 0);
-    close(fd);
 
-    for(target = strtok(buf, "\n"); target != NULL && strstr(target, search) == NULL; target = strtok(NULL, "\n"))
-        printf("%s %s\n", target, search);
+    for(target = NULL, memset(buf, 0, sizeof(buf)); get_line(fd, buf, sizeof(buf) - 1) > 0 && target == NULL; memset(buf, 0, sizeof(buf)))
+    {
+        target = strstr(buf, search);
+    }
+    close(fd);
 
     CHECK(target != NULL);
 
 #ifdef __x86_64__
-    sscanf(target, "%lx", &addr);
+    sscanf(buf, "%lx", &addr);
 #elif __i386__
-    sscanf(target, "%x", &addr);
+    sscanf(buf, "%x", &addr);
 #endif
 
     CHECK(addr != -1);
